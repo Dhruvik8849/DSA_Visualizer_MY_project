@@ -1,147 +1,49 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
-import time
+# stack_visualizer.py
 
-class StackVisualizer:
-    """
-    A class to visualize the Stack data structure using tkinter.
-    """
-    def __init__(self, root):
-        """
-        Initializes the Stack Visualizer GUI.
-        Args:
-            root (tk.Toplevel): The parent window for this visualizer.
-        """
-        self.root = root
-        self.stack = []
-        self.max_size = 8  # Max elements in the stack for visualization purposes
+import streamlit as st
 
-        # --- UI Setup ---
-        self.control_frame = ttk.Frame(self.root, padding="10")
-        self.control_frame.pack(side="top", fill="x")
+def initialize_state(keys_and_defaults):
+    """A helper function to initialize session state keys."""
+    for key, default_value in keys_and_defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = default_value
+
+def run():
+    """Runs the Streamlit UI for the Stack visualizer."""
+    st.subheader("Stack Visualizer")
+    initialize_state({'stack': []})
+
+    col1, col2 = st.columns([1, 2])
+
+    # --- Controls Column ---
+    with col1:
+        st.write("### Controls")
+        value_to_push = st.text_input("Value to Push", key="stack_push_input", help="Enter a value and click 'Push'")
         
-        self.canvas_frame = ttk.Frame(self.root, padding="10")
-        self.canvas_frame.pack(expand=True, fill="both")
+        if st.button("Push", use_container_width=True):
+            if value_to_push:
+                st.session_state.stack.append(value_to_push)
+            else:
+                st.warning("Please enter a value to push.")
 
-        self.canvas = tk.Canvas(self.canvas_frame, bg="#ECF0F1", width=800, height=500)
-        self.canvas.pack(expand=True, fill="both")
-
-        # --- Controls ---
-        ttk.Label(self.control_frame, text="Value:").pack(side="left", padx=5)
-        self.entry = ttk.Entry(self.control_frame, width=10)
-        self.entry.pack(side="left", padx=5)
-
-        self.push_button = ttk.Button(self.control_frame, text="Push", command=self.push)
-        self.push_button.pack(side="left", padx=5)
-
-        self.pop_button = ttk.Button(self.control_frame, text="Pop", command=self.pop)
-        self.pop_button.pack(side="left", padx=5)
+        if st.button("Pop", use_container_width=True, disabled=not st.session_state.stack):
+            popped_value = st.session_state.stack.pop()
+            st.success(f"Popped: {popped_value}")
         
-        self.clear_button = ttk.Button(self.control_frame, text="Clear", command=self.clear_stack)
-        self.clear_button.pack(side="left", padx=5)
+        if st.button("Clear Stack", use_container_width=True):
+            st.session_state.stack.clear()
+            st.rerun()
 
-        self.draw_stack()
-
-    def draw_stack(self):
-        """
-        Draws the current state of the stack on the canvas.
-        """
-        self.canvas.delete("all")
-        canvas_width = self.canvas.winfo_width()
-        canvas_height = self.canvas.winfo_height()
-
-        box_width = 80
-        box_height = 40
-        x_center = canvas_width / 2
-        
-        # Draw stack base
-        self.canvas.create_line(x_center - box_width, canvas_height - 50, x_center + box_width, canvas_height - 50, width=3, fill="#34495E")
-
-        if not self.stack:
-            self.canvas.create_text(x_center, canvas_height - 80, text="Stack is empty", font=("Helvetica", 14), fill="gray")
+    # --- Visualization Column ---
+    with col2:
+        st.write("### Current Stack")
+        if not st.session_state.stack:
+            st.info("Stack is empty.")
         else:
-            for i, value in enumerate(self.stack):
-                y = canvas_height - 50 - (i + 1) * box_height
-                x1 = x_center - box_width / 2
-                y1 = y
-                x2 = x_center + box_width / 2
-                y2 = y + box_height
-                
-                # Draw the stack element box
-                self.canvas.create_rectangle(x1, y1, x2, y2, fill="#3498DB", outline="#2980B9", width=2)
-                # Draw the value inside the box
-                self.canvas.create_text(x_center, y + box_height / 2, text=str(value), font=("Helvetica", 14, "bold"), fill="white")
-        
-        # Draw "Top" pointer
-        if self.stack:
-             top_y = canvas_height - 50 - len(self.stack) * box_height
-             self.canvas.create_text(x_center + box_width, top_y + box_height / 2, text="<-- Top", font=("Helvetica", 12, "bold"), fill="#E74C3C")
-
-
-    def push(self):
-        """
-        Handles the push operation.
-        """
-        value = self.entry.get()
-        if not value:
-            messagebox.showwarning("Input Error", "Please enter a value to push.")
-            return
-        
-        if len(self.stack) >= self.max_size:
-            messagebox.showwarning("Stack Overflow", f"Stack is full (max size: {self.max_size}).")
-            return
-
-        self.stack.append(value)
-        self.entry.delete(0, tk.END)
-        self.animate_push()
-
-    def animate_push(self):
-        """
-        Animates the push operation.
-        """
-        self.draw_stack() # Redraw to show the new element
-        self.root.update_idletasks()
-
-    def pop(self):
-        """
-        Handles the pop operation.
-        """
-        if not self.stack:
-            messagebox.showinfo("Stack Underflow", "Stack is empty, cannot pop.")
-            return
-        
-        self.animate_pop()
-
-    def animate_pop(self):
-        """
-        Animates the pop operation.
-        """
-        # Highlight the top element before removing
-        canvas_width = self.canvas.winfo_width()
-        canvas_height = self.canvas.winfo_height()
-        box_width = 80
-        box_height = 40
-        x_center = canvas_width / 2
-        
-        top_y = canvas_height - 50 - len(self.stack) * box_height
-        x1 = x_center - box_width / 2
-        y1 = top_y
-        x2 = x_center + box_width / 2
-        y2 = top_y + box_height
-        
-        # Highlight rectangle
-        highlight_rect = self.canvas.create_rectangle(x1, y1, x2, y2, fill="#E74C3C", outline="#C0392B", width=2)
-        self.root.update()
-        time.sleep(0.5)
-
-        self.stack.pop()
-        self.canvas.delete(highlight_rect)
-        self.draw_stack()
-        self.root.update_idletasks()
-        
-    def clear_stack(self):
-        """Clears the stack and redraws the canvas."""
-        self.stack.clear()
-        self.draw_stack()
-        messagebox.showinfo("Stack Cleared", "The stack has been cleared.")
-
+            container = st.container(border=True)
+            # Display stack with the top element highlighted
+            for i, item in enumerate(reversed(st.session_state.stack)):
+                if i == 0:  # Top of the stack
+                    container.markdown(f"<div style='padding: 10px; margin: 5px; border: 2px solid #3498DB; border-radius: 5px; text-align: center; background-color: #AED6F1;'>{item} &nbsp; <b>(Top)</b></div>", unsafe_allow_html=True)
+                else:
+                    container.markdown(f"<div style='padding: 10px; margin: 5px; border: 1px solid #BDC3C7; border-radius: 5px; text-align: center;'>{item}</div>", unsafe_allow_html=True)
