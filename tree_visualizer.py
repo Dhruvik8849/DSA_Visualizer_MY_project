@@ -1,4 +1,4 @@
-\# tree_visualizer.py
+# tree_visualizer.py
 
 import streamlit as st
 from graphviz import Digraph
